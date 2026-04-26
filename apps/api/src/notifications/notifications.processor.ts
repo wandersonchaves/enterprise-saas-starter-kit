@@ -28,6 +28,13 @@ export class NotificationsProcessor extends WorkerHost {
           text: `You have reached ${job.data.percentage}% of your plan limit.`,
         });
         break;
+      case 'org-invite':
+        await this.emailProvider.sendEmail({
+          to: job.data.email,
+          subject: job.data.subject,
+          html: job.data.html,
+        });
+        break;
     }
   }
 }

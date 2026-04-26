@@ -19,4 +19,12 @@ export class NotificationsService {
       percentage,
     });
   }
+
+  async sendOrgInvite(email: string, subject: string, html: string) {
+    await this.notificationsQueue.add('org-invite', {
+      email,
+      subject,
+      html,
+    });
+  }
 }

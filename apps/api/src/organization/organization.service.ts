@@ -1,9 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Inject, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@enterprise/database';
 import * as crypto from 'crypto';
-import { EMAIL_PROVIDER } from '../common/interfaces/email.interface';
-import type { IEmailProvider } from '../common/interfaces/email.interface';
+import { NotificationsService } from '../notifications/notifications.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 
@@ -11,13 +11,56 @@ import type { Cache } from 'cache-manager';
 export class OrganizationService {
   constructor(
     private prisma: PrismaService,
-    @Inject(EMAIL_PROVIDER) private emailProvider: IEmailProvider,
+    private notificationsService: NotificationsService,
+    private auditLogsService: AuditLogsService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
+  async createOrganization(userId: string, name: string, slug: string) {
+    const existingOrg = await this.prisma.client.organization.findUnique({
+      where: { slug },
+    });
+
+    if (existingOrg) {
+      throw new ForbiddenException('Organization slug already exists');
+    }
+
+    const org = await this.prisma.client.organization.create({
+      data: {
+        name,
+        slug,
+        members: {
+          create: {
+            userId,
+            role: 'OWNER',
+          },
+        },
+      },
+      include: {
+        members: true,
+      },
+    });
+
+    // Async logging
+    this.auditLogsService.log({
+      action: 'ORGANIZATION_CREATE',
+      entity: 'Organization',
+      entityId: org.id,
+      userId,
+      organizationId: org.id,
+      metadata: { name, slug },
+    });
+
+    return org;
+  }
+
   async getOrganization(id: string) {
-    const cachedOrg = await this.cacheManager.get(`org:${id}`);
-    if (cachedOrg) return cachedOrg;
+    try {
+      const cachedOrg = await this.cacheManager.get(`org:${id}`);
+      if (cachedOrg) return cachedOrg;
+    } catch (err) {
+      console.error('Cache get error:', err);
+    }
 
     const org = await this.prisma.client.organization.findUnique({
       where: { id },
@@ -25,7 +68,11 @@ export class OrganizationService {
 
     if (!org) throw new NotFoundException('Organization not found');
 
-    await this.cacheManager.set(`org:${id}`, org);
+    try {
+      await this.cacheManager.set(`org:${id}`, org);
+    } catch (err) {
+      console.error('Cache set error:', err);
+    }
     return org;
   }
 
@@ -53,7 +100,19 @@ export class OrganizationService {
     });
 
     if (existingMember) {
-      throw new ForbiddenException('User is already a member of this organization');
+      throw new ConflictException('User is already a member of this organization');
+    }
+
+    // Check if there is already a pending invite
+    const existingInvite = await this.prisma.client.invite.findFirst({
+      where: {
+        organizationId,
+        email,
+      },
+    });
+
+    if (existingInvite) {
+      throw new ConflictException('An invite has already been sent to this email');
     }
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -71,15 +130,25 @@ export class OrganizationService {
       },
     });
 
+    // Async logging
+    this.auditLogsService.log({
+      action: 'MEMBER_INVITE',
+      entity: 'Invite',
+      entityId: invite.id,
+      userId: authorId,
+      organizationId,
+      metadata: { email, role },
+    });
+
     // Send an email here with the invite link
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const inviteLink = `${frontendUrl}/invite?token=${token}`;
 
-    await this.emailProvider.sendEmail({
-      to: email,
-      subject: 'You have been invited to join an organization',
-      html: `<p>You have been invited to join. Click <a href="${inviteLink}">here</a> to accept.</p>`,
-    });
+    await this.notificationsService.sendOrgInvite(
+      email,
+      'You have been invited to join an organization',
+      `<p>You have been invited to join. Click <a href="${inviteLink}">here</a> to accept.</p>`,
+    );
 
     return invite;
   }
