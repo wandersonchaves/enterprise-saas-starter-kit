@@ -29,9 +29,19 @@ export class BackupProcessor extends WorkerHost {
         await execAsync(`pg_dump ${process.env.DATABASE_URL} > ${filePath}`);
 
         // Upload to S3
+        const bucketName = process.env.BACKUP_BUCKET_NAME;
+        
+        if (!bucketName) {
+          this.logger.warn('BACKUP_BUCKET_NAME is not configured. Skipping S3 upload.');
+          if (process.env.NODE_ENV === 'development') {
+            this.logger.log(`In development, backup file is available at: ${filePath}`);
+          }
+          return;
+        }
+
         // Note: This assumes AWS credentials are set in environment
         await this.s3Client.send(new PutObjectCommand({
-          Bucket: process.env.BACKUP_BUCKET_NAME || 'my-backups',
+          Bucket: bucketName,
           Key: fileName,
           Body: require('fs').createReadStream(filePath),
         }));

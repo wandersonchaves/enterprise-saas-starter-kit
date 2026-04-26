@@ -53,12 +53,14 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
       },
     }),
     PrometheusModule.register(),
-    CacheModule.register({
+    CacheModule.registerAsync({
       isGlobal: true,
-      store: redisStore,
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      ttl: 600, // 10 minutes
+      useFactory: async () => ({
+        store: await redisStore({
+          url: `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`,
+          ttl: 600,
+        }),
+      }),
     }),
   ],
   controllers: [AppController],
