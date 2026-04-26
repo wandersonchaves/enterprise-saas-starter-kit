@@ -6,8 +6,25 @@ export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
-  // Extract tenant slug from subdomain or path (e.g., tenant.saas.com or saas.com/tenant)
-  // For this starter kit, we'll look for an 'x-tenant-slug' header or cookie as a fallback
+  const token = request.cookies.get('access_token')?.value;
+  const isHomePage = url.pathname === '/';
+
+  // Define public routes that don't require authentication
+  const publicRoutes = ['/', '/login', '/register', '/blog'];
+  const isPublicRoute = publicRoutes.some(route => url.pathname === route || url.pathname.startsWith('/blog/'));
+
+  // 1. Redirect logged-in users from '/' to '/dashboard'
+  if (isHomePage && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // 2. Redirect unauthenticated users from private routes to '/login'
+  if (!isPublicRoute && !token) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', url.pathname); // Save original destination
+    return NextResponse.redirect(loginUrl);
+  }
+
   const tenantSlug = request.headers.get('x-tenant-slug') || request.cookies.get('tenant-slug')?.value;
 
   const response = NextResponse.next();
