@@ -22,13 +22,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const message =
       exception instanceof HttpException
         ? exception.getResponse()
-        : 'Internal server error';
+        : exception.message || 'Internal server error';
 
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       message: typeof message === 'object' ? (message as any).message || message : message,
+      ...(process.env.NODE_ENV !== 'production' && { stack: exception.stack }),
     });
   }
 }

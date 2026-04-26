@@ -1,3 +1,13 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load .env from monorepo root at the very beginning
+dotenv.config({ path: path.join(process.cwd(), '../../.env') });
+// fallback if running from within apps/api
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: path.join(__dirname, '../../../.env') });
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';

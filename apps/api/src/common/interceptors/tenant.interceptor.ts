@@ -18,11 +18,7 @@ export class TenantInterceptor implements NestInterceptor {
     // For now, let's assume it's optional but if present, it must be used.
     
     if (organizationId) {
-      return new Observable((observer) => {
-        tenantContext.run({ organizationId }, () => {
-          next.handle().subscribe(observer);
-        });
-      });
+      return tenantContext.run({ organizationId }, () => next.handle());
     }
 
     return next.handle();
