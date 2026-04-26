@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { prisma, ExtendedPrismaClient, PrismaClient } from '@enterprise/database';
 
 @Injectable()
-export class PrismaService implements OnModuleInit {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private _prisma: ExtendedPrismaClient;
   private _readReplica?: PrismaClient;
 
@@ -31,6 +31,13 @@ export class PrismaService implements OnModuleInit {
     await this._prisma.$connect();
     if (this._readReplica) {
       await this._readReplica.$connect();
+    }
+  }
+
+  async onModuleDestroy() {
+    await this._prisma.$disconnect();
+    if (this._readReplica) {
+      await this._readReplica.$disconnect();
     }
   }
 }

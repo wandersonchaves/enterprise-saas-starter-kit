@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class AuditLogsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(@InjectQueue('audit-logs') private readonly auditQueue: Queue) {}
 
   async log(data: {
     action: string;
@@ -15,8 +16,13 @@ export class AuditLogsService {
     ipAddress?: string;
     userAgent?: string;
   }) {
-    return this.prisma.client.auditLog.create({
-      data,
+    // Non-blocking call: just push to the queue and return immediately
+    await this.auditQueue.add('save-log', data, {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000,
+      },
     });
   }
 }
