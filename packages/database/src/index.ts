@@ -1,5 +1,21 @@
-export * from '@prisma/client'
-import { PrismaClient } from '@prisma/client'
+export * from './generated/client/index.js'
+export type { 
+  Organization, 
+  User, 
+  Member, 
+  Subscription, 
+  Document, 
+  Invite, 
+  Webhook, 
+  ApiKey, 
+  AuditLog, 
+  Plugin, 
+  MarketplaceExtension, 
+  InstalledExtension, 
+  Workflow, 
+  WorkflowStep 
+} from './generated/client/index.js'
+import { PrismaClient } from './generated/client/index.js'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
 export const tenantContext = new AsyncLocalStorage<{ organizationId: string }>()
@@ -11,7 +27,7 @@ export const prisma = new PrismaClient().$extends({
         const context = tenantContext.getStore()
 
         // Models that are NOT tenant-specific (global models)
-        const globalModels = ['User', 'Account', 'Organization']
+        const globalModels = ['User', 'Account', 'Organization', 'MarketplaceExtension']
 
         if (globalModels.includes(model)) {
           return query(args)
@@ -41,3 +57,4 @@ export const prisma = new PrismaClient().$extends({
 })
 
 export type ExtendedPrismaClient = typeof prisma
+export { PrismaClient }

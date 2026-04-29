@@ -1,18 +1,26 @@
-import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Res, UseGuards, BadRequestException } from '@nestjs/common';
 import { AiService } from './ai.service';
 import type { Response } from 'express';
+import { ClerkGuard } from '../common/guards/clerk.guard';
+import { CurrentOrg } from '../common/decorators/org.decorator';
+import type { Organization } from '@enterprise/database';
 
 @Controller('ai')
+@UseGuards(ClerkGuard)
 export class AiController {
   constructor(private aiService: AiService) {}
 
   @Post('chat')
   async chat(
     @Body('messages') messages: any[],
-    @Body('organizationId') organizationId: string,
+    @CurrentOrg() org: Organization,
     @Res() res: Response,
   ) {
-    const result = await this.aiService.generateChatResponse(messages, organizationId);
+    if (!messages || messages.length === 0) {
+      throw new BadRequestException('Messages are required');
+    }
+
+    const result = await this.aiService.generateChatResponse(messages, org.id);
     
     // Convert to a stream and pipe to the response
     result.pipeTextStreamToResponse(res);

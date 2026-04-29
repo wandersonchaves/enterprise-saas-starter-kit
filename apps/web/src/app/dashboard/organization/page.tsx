@@ -1,147 +1,263 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { organizationService, Organization } from '@/services/organization';
-import { Button } from '@/components/ui/button';
-import { Shield, Building2, UserPlus, Info } from 'lucide-react';
-import { Can } from '@/components/auth/can';
+import React, { useState, useEffect } from "react";
+import { DataTable } from "@/components/ui/data-table";
+import { 
+  Users, 
+  Settings as SettingsIcon, 
+  Palette, 
+  ShieldCheck,
+  Plus,
+  Mail,
+  User as UserIcon,
+  Loader2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useApi } from "@/hooks/use-api";
+import { toast } from "sonner";
+
+interface Member {
+  id: string;
+  role: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+}
+
+const memberColumns = [
+  { header: "Membro", accessorKey: "user", render: (user: any) => (
+    <div className="flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-xs overflow-hidden">
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+        ) : (
+          <UserIcon size={14} />
+        )}
+      </div>
+      <div className="flex flex-col min-w-0">
+        <span className="font-medium text-foreground truncate">{user.name || "Sem Nome"}</span>
+        <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+      </div>
+    </div>
+  )},
+  { header: "Função", accessorKey: "role", render: (val: string) => (
+    <div className="flex items-center gap-2">
+      <ShieldCheck size={14} className={cn(
+        val === "OWNER" ? "text-amber-500" : val === "ADMIN" ? "text-blue-500" : "text-muted-foreground"
+      )} />
+      <span className="text-xs font-semibold capitalize">{val.toLowerCase()}</span>
+    </div>
+  )},
+  { header: "Status", accessorKey: "id", render: () => (
+    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600">
+      Ativo
+    </span>
+  )},
+];
 
 export default function OrganizationPage() {
-  const [org, setOrg] = useState<Organization | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<"members" | "branding" | "settings">("members");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [orgName, setOrgName] = useState("");
+  const [emailToInvite, setEmailToInvite] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { fetcher } = useApi();
+
+  const loadData = async () => {
+    try {
+      const [membersData, orgData] = await Promise.all([
+        fetcher<Member[]>("/organizations/members"),
+        fetcher<any>("/organizations/me")
+      ]);
+      setMembers(membersData);
+      setOrgName(orgData.name);
+    } catch (error) {
+      console.error("Failed to load data:", error);
+      toast.error("Erro ao carregar dados.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const orgId = localStorage.getItem('organization-id');
-    if (orgId) {
-      setLoading(true);
-      organizationService.getById(orgId)
-        .then(setOrg)
-        .catch(err => setMessage(err.message || 'Failed to load organization'))
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, []);
+    loadData();
+  }, [fetcher]);
 
-  const handleCreateOrg = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSaveBranding = async () => {
+    setIsSaving(true);
     try {
-      const newOrg = await organizationService.create(name, slug);
-      setOrg(newOrg);
-      localStorage.setItem('organization-id', newOrg.id);
-      setMessage('Organization created successfully!');
-    } catch (err: any) {
-      setMessage(err.message || 'Failed to create organization');
+      await fetcher("/organizations/me", {
+        method: "PATCH",
+        body: JSON.stringify({ name: orgName }),
+      });
+      toast.success("Configurações salvas com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao salvar configurações.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!org) return;
-    setMessage('');
+    if (!emailToInvite) return;
+
+    setIsInviting(true);
     try {
-      await organizationService.inviteMember(org.id, inviteEmail, 'MEMBER');
-      setMessage(`Invite sent to ${inviteEmail}`);
-      setInviteEmail('');
-    } catch (err: any) {
-      setMessage(err.message || 'Failed to send invite');
+      // Usamos o ID da organização do contexto se necessário, 
+      // mas o backend já injeta via CurrentOrg no ClerkGuard
+      await fetcher("/organizations/1/invites", {
+        method: "POST",
+        body: JSON.stringify({ email: emailToInvite, role: "MEMBER" }),
+      });
+      
+      toast.success(`Convite enviado para ${emailToInvite}!`);
+      setEmailToInvite("");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar convite.");
+    } finally {
+      setIsInviting(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Loading organization details...</div>;
-
-  if (!org) {
-    return (
-      <div className="max-w-md mx-auto mt-20 p-8 border rounded-xl bg-card shadow-sm">
-        <div className="flex items-center gap-2 mb-6">
-          <Building2 className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold">Create Organization</h1>
-        </div>
-        <form onSubmit={handleCreateOrg} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Organization Name</label>
-            <input 
-              className="w-full px-3 py-2 border rounded-md" 
-              value={name} onChange={e => setName(e.target.value)} 
-              placeholder="Ex: Acme Inc" required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">URL Slug</label>
-            <input 
-              className="w-full px-3 py-2 border rounded-md" 
-              value={slug} onChange={e => setSlug(e.target.value)} 
-              placeholder="acme-inc" required
-            />
-          </div>
-          <Button type="submit" className="w-full">Create</Button>
-        </form>
-        {message && <p className="mt-4 text-sm text-center text-primary font-medium">{message}</p>}
-      </div>
-    );
-  }
-
   return (
-    <div className="p-8 space-y-8 max-w-4xl">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Organization Settings</h1>
-        <div className="flex items-center gap-2 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">
-          <Shield className="w-4 h-4" />
-          Active Tenant
+    <div className="max-w-5xl mx-auto space-y-8 pb-10 page-transition">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Workspace Management</h1>
+          <p className="text-muted-foreground">Gerencie sua equipe, identidade visual e configurações do workspace.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Details Section */}
-        <section className="p-6 border rounded-xl bg-card">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Building2 className="w-5 h-5" /> General Info
-          </h2>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-bold">Name</p>
-              <p className="text-lg">{org.name}</p>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 border-b pb-px overflow-x-auto scrollbar-hide">
+        {[
+          { id: "members", label: "Membros", icon: Users },
+          { id: "branding", label: "Branding", icon: Palette },
+          { id: "settings", label: "Configurações", icon: SettingsIcon },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative shrink-0",
+              activeTab === tab.id 
+                ? "text-primary border-b-2 border-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <tab.icon size={18} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="pt-4">
+        {activeTab === "members" && (
+          <div className="space-y-6">
+            <div className="bg-card border rounded-2xl p-6 shadow-sm">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <Plus size={20} className="text-primary" />
+                Convidar novo membro
+              </h3>
+              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+                <input 
+                  type="email" 
+                  required
+                  placeholder="email@empresa.com"
+                  value={emailToInvite}
+                  onChange={(e) => setEmailToInvite(e.target.value)}
+                  className="flex-1 bg-muted/50 border rounded-xl px-4 py-2 text-sm focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                />
+                <button 
+                  disabled={isInviting}
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isInviting ? <Loader2 size={18} className="animate-spin" /> : "Enviar Convite"}
+                </button>
+              </form>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase font-bold">ID</p>
-              <code className="text-sm bg-muted px-1 rounded">{org.id}</code>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="font-bold text-lg">Membros Ativos ({members.length})</h3>
+              </div>
+              <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">
+                {isLoading ? (
+                  <div className="p-20 flex flex-col items-center justify-center gap-4 text-muted-foreground">
+                    <Loader2 size={32} className="animate-spin text-primary" />
+                    <p className="font-medium">Carregando membros...</p>
+                  </div>
+                ) : (
+                  <DataTable columns={memberColumns as any} data={members} />
+                )}
+              </div>
             </div>
           </div>
-        </section>
+        )}
 
-        {/* RBAC Protected Invite Section */}
-        <Can I={['OWNER', 'ADMIN']}>
-          <section className="p-6 border rounded-xl bg-card">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <UserPlus className="w-5 h-5" /> Invite Member
-            </h2>
-            <form onSubmit={handleInvite} className="space-y-4">
-              <input 
-                className="w-full px-3 py-2 border rounded-md text-sm" 
-                type="email" placeholder="colleague@company.com" 
-                value={inviteEmail} onChange={e => setInviteEmail(e.target.value)}
-                autoComplete="off"
-                required
-              />
-              <Button type="submit" variant="outline" className="w-full">Send Invite</Button>
-            </form>
-          </section>
-        </Can>
-      </div>
+        {activeTab === "branding" && (
+          <div className="grid gap-6">
+            <div className="rounded-2xl border bg-card p-8 shadow-sm space-y-8">
+              <div>
+                <h3 className="text-xl font-bold">Identidade Visual</h3>
+                <p className="text-sm text-muted-foreground">Configure como o workspace aparece para seus clientes.</p>
+              </div>
+              
+              <div className="grid gap-8 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <label className="text-sm font-bold">Nome da Organização</label>
+                  <input 
+                    type="text" 
+                    value={orgName} 
+                    onChange={(e) => setOrgName(e.target.value)}
+                    className="w-full px-4 py-2 bg-muted rounded-xl text-sm border focus:ring-2 focus:ring-primary/20 outline-none transition-all" 
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-sm font-bold">Logo (White-label)</label>
+                  <div className="h-10 border-2 border-dashed rounded-xl flex items-center justify-center text-[10px] font-black tracking-widest text-muted-foreground cursor-pointer hover:bg-muted/50 hover:border-primary/20 transition-all uppercase">
+                    Breve: Upload via S3
+                  </div>
+                </div>
+              </div>
 
-      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg flex gap-3 text-blue-800">
-        <Info className="w-5 h-5 shrink-0" />
-        <p className="text-sm">
-          <strong>Pro-tip:</strong> When switching organizations, your <code>organization-id</code> header 
-          will change, and the Prisma Data Isolation layer will ensure you only see data for the active organization.
-        </p>
+              <div className="pt-4 border-t">
+                <button 
+                  onClick={handleSaveBranding}
+                  disabled={isSaving}
+                  className="bg-primary text-primary-foreground px-8 py-3 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/20"
+                >
+                  {isSaving ? <Loader2 size={18} className="animate-spin" /> : "Salvar Alterações"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="rounded-2xl border bg-card p-8 shadow-sm">
+             <div className="flex items-center gap-6 text-amber-600 bg-amber-500/5 p-6 rounded-2xl border border-amber-500/10">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-full flex items-center justify-center shrink-0">
+                <Mail size={24} />
+              </div>
+              <div>
+                <p className="text-lg font-bold">Configurações de E-mail (SMTP)</p>
+                <p className="text-sm text-amber-700/80">Configure seu domínio SMTP para enviar convites e notificações através do seu próprio endereço de e-mail.</p>
+                <button className="mt-4 text-xs font-black uppercase tracking-widest bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-all">
+                  Configurar Agora
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      
-      {message && <p className="text-center text-sm font-bold text-primary">{message}</p>}
     </div>
   );
 }

@@ -1,100 +1,76 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { apiRequest } from '@/services/api';
-import Link from 'next/link';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, FileText, Mail, TrendingUp, ShieldCheck } from 'lucide-react';
-import { Can } from '@/components/auth/can';
+import React from "react";
+import { StatCard } from "@/components/ui/stat-card";
+import { 
+  Users, 
+  DollarSign, 
+  Zap, 
+  TrendingUp,
+  BarChart3
+} from "lucide-react";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const stats = await apiRequest<any>('/analytics/dashboard');
-        setData(stats);
-      } catch (error) {
-        console.error('Failed to fetch stats', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  if (loading) return <div className="p-8">Loading dashboard...</div>;
-
   return (
-    <div className="p-8 space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Can I={['OWNER', 'ADMIN']}>
-          <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold border border-primary/20">
-            <ShieldCheck className="w-4 h-4" />
-            Admin Privileges
-          </div>
-        </Can>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Executive Dashboard</h1>
+        <p className="text-muted-foreground">Bem-vindo de volta. Aqui está o que está acontecendo hoje.</p>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 border rounded-xl bg-card shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <Users className="w-6 h-6 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">Total Members</span>
-          </div>
-          <div className="text-2xl font-bold">{data?.overview?.membersCount}</div>
-        </div>
-        <div className="p-6 border rounded-xl bg-card shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <FileText className="w-6 h-6 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">AI Documents</span>
-          </div>
-          <div className="text-2xl font-bold">{data?.overview?.documentsCount}</div>
-        </div>
-        <div className="p-6 border rounded-xl bg-card shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <Mail className="w-6 h-6 text-primary" />
-            <span className="text-sm font-medium text-muted-foreground">Active Invites</span>
-          </div>
-          <div className="text-2xl font-bold">{data?.overview?.activeInvites}</div>
-        </div>
+      {/* 4-Column Grid for Metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard 
+          title="Receita Total" 
+          value="R$ 45.231,89" 
+          icon={DollarSign} 
+          trend={{ value: 12.5, isPositive: true }}
+        />
+        <StatCard 
+          title="Novas Assinaturas" 
+          value="+2350" 
+          icon={Users} 
+          trend={{ value: 18.1, isPositive: true }}
+        />
+        <StatCard 
+          title="Vendas" 
+          value="+12,234" 
+          icon={Zap} 
+          trend={{ value: 19, isPositive: true }}
+        />
+        <StatCard 
+          title="Ativos agora" 
+          value="+573" 
+          icon={TrendingUp} 
+          trend={{ value: 201, isPositive: true }}
+        />
       </div>
 
-      {/* Chart Section */}
-      <div className="p-8 border rounded-xl bg-card shadow-sm">
-        <div className="flex items-center gap-2 mb-8">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-bold">Member Growth</h2>
+      {/* Charts Placeholder Section */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-4 rounded-xl border bg-card p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-semibold text-lg">Visão Geral de Receita</h3>
+            <BarChart3 size={20} className="text-muted-foreground" />
+          </div>
+          <div className="h-[300px] flex items-center justify-center border-2 border-dashed rounded-lg bg-muted/20 text-muted-foreground">
+            [ Recharts Component Placeholder ]
+          </div>
         </div>
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data?.growthData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+        
+        <div className="col-span-3 rounded-xl border bg-card p-6 shadow-sm">
+          <h3 className="font-semibold text-lg mb-6">Atividade Recente</h3>
+          <div className="space-y-4">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-9 h-9 rounded-full bg-muted border flex items-center justify-center text-xs font-bold">{i+1}</div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-medium">Novo usuário registrado</p>
+                  <p className="text-xs text-muted-foreground">há {i+2} minutos</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-      <Can I="ADMIN">
-        <div className="mt-8 p-6 border border-dashed rounded-xl bg-muted/30">
-          <h3 className="text-lg font-bold mb-2">Admin Control Panel</h3>
-          <p className="text-sm text-muted-foreground mb-4">This section is only visible to users with the ADMIN role.</p>
-          <Link href="/dashboard/organization">
-            <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 transition-colors">
-              Manage Organization Settings
-            </button>
-          </Link>
-        </div>
-      </Can>
     </div>
   );
 }

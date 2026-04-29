@@ -76,6 +76,36 @@ export class OrganizationService {
     return org;
   }
 
+  async getMembers(organizationId: string) {
+    return this.prisma.client.member.findMany({
+      where: { organizationId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+  }
+
+  async updateOrganization(id: string, data: { name?: string, avatarUrl?: string, brandColor?: string }) {
+    const org = await this.prisma.client.organization.update({
+      where: { id },
+      data,
+    });
+
+    // Invalida o cache
+    try {
+      await this.cacheManager.del(`org:${id}`);
+    } catch (err) {}
+
+    return org;
+  }
+
   async inviteMember(organizationId: string, email: string, role: Role, authorId: string) {
     // Check if author has permission to invite
     const authorMember = await this.prisma.client.member.findUnique({
@@ -151,5 +181,39 @@ export class OrganizationService {
     );
 
     return invite;
+  }
+
+  async acceptInvite(token: string, userId: string) {
+    const invite = await this.prisma.client.invite.findUnique({
+      where: { token },
+    });
+
+    if (!invite || invite.expiresAt < new Date()) {
+      throw new ForbiddenException('Invalid or expired invite token');
+    }
+
+    // Add user to organization
+    const member = await this.prisma.client.member.create({
+      data: {
+        organizationId: invite.organizationId,
+        userId: userId,
+        role: invite.role,
+      },
+    });
+
+    // Delete invite after use
+    await this.prisma.client.invite.delete({ where: { id: invite.id } });
+
+    // Audit log
+    this.auditLogsService.log({
+      action: 'MEMBER_JOINED',
+      entity: 'Member',
+      entityId: member.id,
+      userId: userId,
+      organizationId: invite.organizationId,
+      metadata: { method: 'INVITE_LINK' },
+    });
+
+    return member;
   }
 }

@@ -1,15 +1,23 @@
-import { Controller, Post, Body, Headers, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Req, BadRequestException, UseGuards } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import type { Request } from 'express';
+import { ClerkGuard } from '../common/guards/clerk.guard';
+import { CurrentOrg } from '../common/decorators/org.decorator';
+import type { Organization } from '@enterprise/database';
 
 @Controller('billing')
 export class BillingController {
   constructor(private billingService: BillingService) {}
 
   @Post('checkout')
-  async createCheckout(@Body('organizationId') organizationId: string, @Body('plan') plan: string) {
-    return this.billingService.createCheckoutSession(organizationId, plan);
+  @UseGuards(ClerkGuard)
+  async createCheckout(
+    @CurrentOrg() org: Organization, 
+    @Body('plan') plan: string
+  ) {
+    if (!org) throw new BadRequestException('Organization context missing');
+    return this.billingService.createCheckoutSession(org.id, plan);
   }
 
   @Post('webhook')

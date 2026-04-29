@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
+import { HealthController } from './health/health.controller';
 import { OrganizationModule } from './organization/organization.module';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -29,9 +30,15 @@ import { PluginsModule } from './plugins/plugins.module';
 
 import { MarketplaceModule } from './marketplace/marketplace.module';
 
+import { validateEnv } from './common/config/env.validation';
+import { PrismaService } from './prisma/prisma.service';
+
 @Module({
   imports: [
-    AuthModule, 
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      validate: validateEnv,
+    }),
     OrganizationModule,
     BillingModule,
     NotificationsModule,
@@ -63,7 +70,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
       }),
     }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, HealthController],
+  providers: [AppService, PrismaService],
 })
 export class AppModule {}

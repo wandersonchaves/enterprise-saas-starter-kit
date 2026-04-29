@@ -1,25 +1,39 @@
-import { Controller, Get, Post, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
-import { Role } from '@enterprise/database';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { Role, User, Organization } from '@enterprise/database';
+import { ClerkGuard } from '../common/guards/clerk.guard';
+import { CurrentUser } from '../common/decorators/user.decorator';
+import { CurrentOrg } from '../common/decorators/org.decorator';
 
 @Controller('organizations')
-@UseGuards(JwtAuthGuard)
+@UseGuards(ClerkGuard)
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
-  @Post()
-  async createOrganization(
-    @Body('name') name: string,
-    @Body('slug') slug: string,
-    @Request() req: any,
-  ) {
-    return this.organizationService.createOrganization(req.user.id, name, slug);
+  @Get('me')
+  async getMyOrganization(@CurrentOrg() org: Organization) {
+    return org;
   }
 
-  @Get(':id')
-  async getOrganization(@Param('id') id: string) {
-    return this.organizationService.getOrganization(id);
+  @Patch('me')
+  async updateMyOrganization(
+    @CurrentOrg() org: Organization,
+    @Body() data: { name?: string, avatarUrl?: string, brandColor?: string }
+  ) {
+    return this.organizationService.updateOrganization(org.id, data);
+  }
+
+  @Get('members')
+  async getMembers(@CurrentOrg() org: Organization) {
+    return this.organizationService.getMembers(org.id);
+  }
+
+  @Post('invites/accept')
+  async acceptInvite(
+    @Body('token') token: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.organizationService.acceptInvite(token, user.id);
   }
 
   @Post(':id/invites')
@@ -27,9 +41,8 @@ export class OrganizationController {
     @Param('id') organizationId: string,
     @Body('email') email: string,
     @Body('role') role: Role,
-    @Request() req: any,
+    @CurrentUser() user: User,
   ) {
-    const authorId = req.user.id;
-    return this.organizationService.inviteMember(organizationId, email, role, authorId);
+    return this.organizationService.inviteMember(organizationId, email, role, user.id);
   }
 }
