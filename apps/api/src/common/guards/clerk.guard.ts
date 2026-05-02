@@ -32,16 +32,17 @@ export class ClerkGuard implements CanActivate {
     }
 
     try {
-      // Diagnostic log to confirm new implementation
-      // console.log('Clerk Guard: Verifying token with @clerk/backend');
-      
-      // Usando a função verifyToken exportada diretamente
       const sessionClaims = await verifyToken(token, {
         secretKey: this.secretKey,
       });
       
+      const clerkUserId = sessionClaims.sub as string;
+      const clerkOrgId = sessionClaims.org_id as string | undefined;
+
+      // console.log(`Clerk Auth: User ${clerkUserId}, Org ${clerkOrgId}`);
+
       let user = await this.prisma.client.user.findUnique({
-        where: { clerkId: sessionClaims.sub as string },
+        where: { clerkId: clerkUserId },
         include: {
           memberships: {
             include: { organization: true }
@@ -50,17 +51,14 @@ export class ClerkGuard implements CanActivate {
       });
 
       if (!user) {
-        // Just-in-Time Provisioning
-        const clerkUser = await this.clerkClient.users.getUser(sessionClaims.sub as string);
+        const clerkUser = await this.clerkClient.users.getUser(clerkUserId);
         const email = clerkUser.emailAddresses[0]?.emailAddress;
 
-        // Tenta encontrar por e-mail se não achou por clerkId (conflito que gerou o erro)
-        // ou cria um novo se nada existir.
         user = await this.prisma.client.user.upsert({
           where: { email },
-          update: { clerkId: clerkUser.id }, // Vincula o clerkId ao e-mail existente
+          update: { clerkId: clerkUserId },
           create: {
-            clerkId: clerkUser.id,
+            clerkId: clerkUserId,
             email: email,
             name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User',
             avatarUrl: clerkUser.imageUrl,
@@ -75,46 +73,74 @@ export class ClerkGuard implements CanActivate {
 
       request['user'] = user;
       
-      const clerkOrgId = sessionClaims.org_id as string | undefined;
-      
-      // Se tivermos um org_id no Clerk mas não no nosso banco, sincronizamos a org também
-      if (clerkOrgId) {
-        let membership = user.memberships.find(m => m.organization.clerkId === clerkOrgId);
+      // LAZY SYNC: Se o usuário não tem nenhuma membership no nosso banco, 
+      // ou se temos um clerkOrgId ativo que ainda não está sincronizado, sincronizamos.
+      const shouldSync = (user.memberships.length === 0) || (clerkOrgId && !user.memberships.find(m => m.organization.clerkId === clerkOrgId));
+
+      if (shouldSync) {
+        // console.log(`Syncing memberships for user ${clerkUserId}`);
         
-        if (!membership) {
-          const clerkOrg = await this.clerkClient.organizations.getOrganization({ organizationId: clerkOrgId });
-          
-          const org = await this.prisma.client.organization.upsert({
-            where: { clerkId: clerkOrgId },
-            update: { name: clerkOrg.name, avatarUrl: clerkOrg.imageUrl },
-            create: {
-              clerkId: clerkOrgId,
-              name: clerkOrg.name,
-              slug: clerkOrg.slug || `org-${clerkOrgId.substring(0, 8)}`,
-              avatarUrl: clerkOrg.imageUrl,
-            }
+        try {
+          // Busca todas as memberships do usuário no Clerk
+          const { data: clerkMemberships } = await this.clerkClient.users.getOrganizationMembershipList({ 
+            userId: clerkUserId 
           });
 
-          await this.prisma.client.member.create({
-            data: {
-              userId: user.id,
-              organizationId: org.id,
-              role: 'OWNER', // Por padrão, o primeiro a entrar via Clerk Org é Owner no nosso banco
-            }
-          });
+          for (const cm of clerkMemberships) {
+            const org = await this.prisma.client.organization.upsert({
+              where: { clerkId: cm.organization.id },
+              update: { 
+                name: cm.organization.name, 
+                avatarUrl: cm.organization.imageUrl,
+                slug: cm.organization.slug || undefined
+              },
+              create: {
+                clerkId: cm.organization.id,
+                name: cm.organization.name,
+                slug: cm.organization.slug || `org-${cm.organization.id.substring(0, 8)}`,
+                avatarUrl: cm.organization.imageUrl,
+              }
+            });
 
-          request['organization'] = org;
-        } else {
-          request['organization'] = membership.organization;
+            await this.prisma.client.member.upsert({
+              where: {
+                organizationId_userId: {
+                  userId: user.id,
+                  organizationId: org.id
+                }
+              },
+              update: { role: cm.role },
+              create: {
+                userId: user.id,
+                organizationId: org.id,
+                role: cm.role,
+              }
+            });
+          }
+
+          // Recarrega o usuário com as novas memberships para o restante da request
+          user = await this.prisma.client.user.findUnique({
+            where: { id: user.id },
+            include: { memberships: { include: { organization: true } } }
+          }) as any;
+          request['user'] = user;
+        } catch (syncError) {
+          console.error('Failed to sync memberships from Clerk:', syncError);
         }
-      } else {
-        request['organization'] = user.memberships[0]?.organization;
+      }
+
+      if (clerkOrgId && user) {
+        const activeMembership = user.memberships.find(m => m.organization.clerkId === clerkOrgId);
+        if (activeMembership) {
+          request['organization'] = activeMembership.organization;
+          request['membership'] = activeMembership;
+        }
       }
       
       return true;
     } catch (error) {
-      console.error('Clerk Auth Error:', error);
-      throw new UnauthorizedException('Invalid token');
+      console.error('Clerk Auth Guard Error:', error);
+      throw new UnauthorizedException('Invalid or expired token');
     }
   }
 
