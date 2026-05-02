@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiRequest } from '@/services/api';
+import { useParams } from 'next/navigation';
 
 const plans = [
   {
@@ -27,16 +28,16 @@ const plans = [
 
 export default function BillingPage() {
   const [loading, setLoading] = useState<string | null>(null);
+  const { orgSlug } = useParams();
 
   const handleUpgrade = async (planId: string) => {
     if (planId === 'FREE') return;
     
     setLoading(planId);
     try {
-      const organizationId = localStorage.getItem('organization-id');
       const response = await apiRequest<{ url: string }>('/billing/checkout', {
         method: 'POST',
-        body: JSON.stringify({ organizationId, plan: planId }),
+        body: JSON.stringify({ orgSlug, plan: planId }),
       });
       
       if (response.url) {

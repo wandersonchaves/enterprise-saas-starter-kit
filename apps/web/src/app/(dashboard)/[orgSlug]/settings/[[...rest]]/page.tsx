@@ -2,6 +2,7 @@
 
 import React from "react";
 import { UserProfile } from "@clerk/nextjs";
+import { useParams } from "next/navigation";
 import { 
   User, 
   Settings as SettingsIcon, 
@@ -11,6 +12,8 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
+  const { orgSlug } = useParams();
+
   return (
     <div className="space-y-8 page-transition">
       <div>
@@ -47,7 +50,7 @@ export default function SettingsPage() {
         {/* Área de Conteúdo Principal */}
         <div className="flex-1 bg-card rounded-xl border shadow-sm overflow-hidden">
           <UserProfile 
-            path="/dashboard/settings"
+            path={`/${orgSlug}/settings`}
             routing="path"
             appearance={{
               elements: {

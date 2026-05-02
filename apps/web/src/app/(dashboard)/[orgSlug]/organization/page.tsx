@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useApi } from "@/hooks/use-api";
 import { toast } from "sonner";
+import { useParams } from "next/navigation";
+import { Can } from "@/components/auth/can";
 
 interface Member {
   id: string;
@@ -59,6 +61,7 @@ const memberColumns = [
 ];
 
 export default function OrganizationPage() {
+  const { orgSlug } = useParams();
   const [activeTab, setActiveTab] = useState<"members" | "branding" | "settings">("members");
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,8 +74,8 @@ export default function OrganizationPage() {
   const loadData = async () => {
     try {
       const [membersData, orgData] = await Promise.all([
-        fetcher<Member[]>("/organizations/members"),
-        fetcher<any>("/organizations/me")
+        fetcher<Member[]>(`/organizations/${orgSlug}/members`),
+        fetcher<any>(`/organizations/${orgSlug}`)
       ]);
       setMembers(membersData);
       setOrgName(orgData.name);
@@ -85,13 +88,13 @@ export default function OrganizationPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [fetcher]);
+    if (orgSlug) loadData();
+  }, [orgSlug, fetcher]);
 
   const handleSaveBranding = async () => {
     setIsSaving(true);
     try {
-      await fetcher("/organizations/me", {
+      await fetcher(`/organizations/${orgSlug}`, {
         method: "PATCH",
         body: JSON.stringify({ name: orgName }),
       });
@@ -109,15 +112,14 @@ export default function OrganizationPage() {
 
     setIsInviting(true);
     try {
-      // Usamos o ID da organização do contexto se necessário, 
-      // mas o backend já injeta via CurrentOrg no ClerkGuard
-      await fetcher("/organizations/1/invites", {
+      await fetcher(`/organizations/${orgSlug}/invites`, {
         method: "POST",
         body: JSON.stringify({ email: emailToInvite, role: "MEMBER" }),
       });
       
       toast.success(`Convite enviado para ${emailToInvite}!`);
       setEmailToInvite("");
+      loadData(); // Refresh members list
     } catch (error: any) {
       toast.error(error.message || "Erro ao enviar convite.");
     } finally {
@@ -136,53 +138,76 @@ export default function OrganizationPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b pb-px overflow-x-auto scrollbar-hide">
-        {[
-          { id: "members", label: "Membros", icon: Users },
-          { id: "branding", label: "Branding", icon: Palette },
-          { id: "settings", label: "Configurações", icon: SettingsIcon },
-        ].map((tab) => (
+        <button
+          onClick={() => setActiveTab("members")}
+          className={cn(
+            "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative shrink-0",
+            activeTab === "members" 
+              ? "text-primary border-b-2 border-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Users size={18} />
+          Membros
+        </button>
+
+        <Can I={["OWNER", "ADMIN"]}>
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab("branding")}
             className={cn(
               "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative shrink-0",
-              activeTab === tab.id 
+              activeTab === "branding" 
                 ? "text-primary border-b-2 border-primary" 
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <tab.icon size={18} />
-            {tab.label}
+            <Palette size={18} />
+            Branding
           </button>
-        ))}
+
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative shrink-0",
+              activeTab === "settings" 
+                ? "text-primary border-b-2 border-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <SettingsIcon size={18} />
+            Configurações
+          </button>
+        </Can>
       </div>
 
       {/* Content */}
       <div className="pt-4">
         {activeTab === "members" && (
           <div className="space-y-6">
-            <div className="bg-card border rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <Plus size={20} className="text-primary" />
-                Convidar novo membro
-              </h3>
-              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
-                <input 
-                  type="email" 
-                  required
-                  placeholder="email@empresa.com"
-                  value={emailToInvite}
-                  onChange={(e) => setEmailToInvite(e.target.value)}
-                  className="flex-1 bg-muted/50 border rounded-xl px-4 py-2 text-sm focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                />
-                <button 
-                  disabled={isInviting}
-                  className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isInviting ? <Loader2 size={18} className="animate-spin" /> : "Enviar Convite"}
-                </button>
-              </form>
-            </div>
+            <Can I={["OWNER", "ADMIN"]}>
+              <div className="bg-card border rounded-2xl p-6 shadow-sm">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <Plus size={20} className="text-primary" />
+                  Convidar novo membro
+                </h3>
+                <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+                  <input 
+                    type="email" 
+                    required
+                    placeholder="email@empresa.com"
+                    value={emailToInvite}
+                    onChange={(e) => setEmailToInvite(e.target.value)}
+                    className="flex-1 bg-muted/50 border rounded-xl px-4 py-2 text-sm focus:bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                  />
+                  <button 
+                    disabled={isInviting}
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isInviting ? <Loader2 size={18} className="animate-spin" /> : "Enviar Convite"}
+                  </button>
+                </form>
+              </div>
+            </Can>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between px-2">

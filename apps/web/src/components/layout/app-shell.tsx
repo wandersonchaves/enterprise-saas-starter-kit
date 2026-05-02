@@ -19,18 +19,23 @@ import {
 
 import { UserButton, OrganizationSwitcher } from "@clerk/nextjs";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "IA Assistant", href: "/dashboard/ai", icon: Sparkles },
-  { name: "Documentos", href: "/dashboard/documents", icon: FileText },
-  { name: "Audit Logs", href: "/dashboard/audit-logs", icon: History },
-  { name: "Membros", href: "/dashboard/organization", icon: Users },
-  { name: "Assinatura", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Configurações", href: "/dashboard/settings", icon: Settings },
-];
+interface AppShellProps {
+  children: React.ReactNode;
+  orgSlug: string;
+}
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, orgSlug }: AppShellProps) {
   const pathname = usePathname();
+
+  const navigation = [
+    { name: "Dashboard", href: `/${orgSlug}`, icon: LayoutDashboard },
+    { name: "IA Assistant", href: `/${orgSlug}/ai`, icon: Sparkles },
+    { name: "Documentos", href: `/${orgSlug}/documents`, icon: FileText },
+    { name: "Audit Logs", href: `/${orgSlug}/audit-logs`, icon: History },
+    { name: "Membros", href: `/${orgSlug}/organization`, icon: Users },
+    { name: "Assinatura", href: `/${orgSlug}/billing`, icon: CreditCard },
+    { name: "Configurações", href: `/${orgSlug}/settings`, icon: Settings },
+  ];
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -42,6 +47,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Enterprise
           </div>
           <OrganizationSwitcher 
+            hidePersonal
+            afterSelectOrganizationUrl="/dashboard"
             appearance={{
               elements: {
                 rootBox: "w-full",
@@ -53,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== `/${orgSlug}` && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.name}

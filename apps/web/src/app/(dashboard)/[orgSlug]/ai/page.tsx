@@ -2,21 +2,18 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 
 export default function AiChatPage() {
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setOrganizationId(localStorage.getItem('organization-id'));
-  }, []);
+  const { orgSlug } = useParams();
 
   const chat: any = useChat({
     api: '/api/chat',
     body: {
-      organizationId,
+      orgSlug,
     },
     headers: {
-      'organization-id': organizationId || '',
+      'x-org-slug': orgSlug as string,
     },
   } as any);
 

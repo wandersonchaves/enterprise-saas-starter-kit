@@ -1,5 +1,8 @@
+"use client";
+
 import React from "react";
 import { StatCard } from "@/components/ui/stat-card";
+import { useParams } from "next/navigation";
 import { 
   Users, 
   DollarSign, 
@@ -9,11 +12,13 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
+  const { orgSlug } = useParams();
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Executive Dashboard</h1>
-        <p className="text-muted-foreground">Bem-vindo de volta. Aqui está o que está acontecendo hoje.</p>
+        <p className="text-muted-foreground">Bem-vindo de volta. Aqui está o que está acontecendo hoje no workspace {orgSlug}.</p>
       </div>
 
       {/* 4-Column Grid for Metrics */}

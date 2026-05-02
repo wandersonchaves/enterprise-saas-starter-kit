@@ -8,10 +8,10 @@ import { ptBR } from "date-fns/locale";
 import { 
   History, 
   User as UserIcon, 
-  ShieldAlert, 
   Activity,
   Info
 } from "lucide-react";
+import { useParams } from "next/navigation";
 
 interface AuditLog {
   id: string;
@@ -90,6 +90,7 @@ const columns = [
 ];
 
 export default function AuditLogsPage() {
+  const { orgSlug } = useParams();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { fetcher } = useApi();
@@ -97,7 +98,7 @@ export default function AuditLogsPage() {
   useEffect(() => {
     const loadLogs = async () => {
       try {
-        const data = await fetcher<AuditLog[]>("/audit-logs");
+        const data = await fetcher<AuditLog[]>(`/audit-logs?orgSlug=${orgSlug}`);
         setLogs(data);
       } catch (error) {
         console.error("Failed to load audit logs:", error);
@@ -105,8 +106,8 @@ export default function AuditLogsPage() {
         setIsLoading(false);
       }
     };
-    loadLogs();
-  }, [fetcher]);
+    if (orgSlug) loadLogs();
+  }, [fetcher, orgSlug]);
 
   return (
     <div className="space-y-8 page-transition">
@@ -132,7 +133,6 @@ export default function AuditLogsPage() {
           <p className="text-3xl font-black">{logs.length}</p>
           <p className="text-xs text-muted-foreground mt-2">Registradas nos últimos 30 dias</p>
         </div>
-        {/* Mais cards de estatísticas poderiam vir aqui */}
       </div>
 
       <div className="bg-card border rounded-2xl shadow-sm overflow-hidden">

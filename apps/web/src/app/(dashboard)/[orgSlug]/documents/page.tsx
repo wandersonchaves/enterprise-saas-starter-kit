@@ -3,6 +3,7 @@
 import React from "react";
 import { DataTable } from "@/components/ui/data-table";
 import { FileText, Download, Eye, MoreVertical } from "lucide-react";
+import { useParams } from "next/navigation";
 
 // Agora como Client Component, podemos passar funções de renderização sem erros
 const documentColumns = [
@@ -30,6 +31,8 @@ const mockDocs = [
 ];
 
 export default function DocumentsPage() {
+  const { orgSlug } = useParams();
+
   return (
     <div className="space-y-6 page-transition">
       <div>
