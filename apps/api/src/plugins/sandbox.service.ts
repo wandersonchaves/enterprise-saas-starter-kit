@@ -24,7 +24,8 @@ export class SandboxService {
       // Execute with timeout and limited access
       return script.runInContext(vmContext, { timeout: 1000 });
     } catch (error) {
-      this.logger.error(`Sandbox execution failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Sandbox execution failed: ${message}`);
       throw error;
     }
   }

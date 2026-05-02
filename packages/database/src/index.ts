@@ -17,10 +17,17 @@ export type {
 } from './generated/client/index.js'
 import { PrismaClient } from './generated/client/index.js'
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
 
 export const tenantContext = new AsyncLocalStorage<{ organizationId: string }>()
 
-export const prisma = new PrismaClient().$extends({
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+
+export const prisma = new PrismaClient({
+  adapter,
+}).$extends({
   query: {
     $allModels: {
       async $allOperations({ model, operation, args, query }) {

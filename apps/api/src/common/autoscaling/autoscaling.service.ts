@@ -28,7 +28,8 @@ export class AutoScalingService implements OnModuleInit {
         await this.triggerScaling('DOWN');
       }
     } catch (error) {
-      this.logger.error(`Error monitoring cluster load: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Error monitoring cluster load: ${message}`);
     }
   }
 

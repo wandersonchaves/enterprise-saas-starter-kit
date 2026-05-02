@@ -31,7 +31,8 @@ export class StorageService {
       await this.client.send(command);
       return `https://${this.bucket}.s3.amazonaws.com/${key}`;
     } catch (error) {
-      this.logger.error(`File upload failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`File upload failed: ${message}`);
       throw error;
     }
   }

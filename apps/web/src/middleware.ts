@@ -1,32 +1,46 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const isPublicRoute = createRouteMatcher([
-  "/", 
-  "/login(.*)", 
-  "/register(.*)", 
-  "/blog(.*)",
-  "/api/webhooks(.*)"
-]);
+/**
+ * Configuração de Rotas baseada no comando Staff Engineer
+ * Estratégia: Redirecionamento inteligente e performance no Edge
+ */
+interface RouteConfig {
+  path: string;
+  isPublic: boolean;
+  whenAuthenticated: 'redirect' | 'next';
+}
 
-const isAuthRoute = createRouteMatcher([
-  "/login(.*)", 
-  "/register(.*)"
-]);
+const ROUTES: RouteConfig[] = [
+  { path: "/", isPublic: true, whenAuthenticated: 'next' },
+  { path: "/pricing", isPublic: true, whenAuthenticated: 'next' },
+  { path: "/blog", isPublic: true, whenAuthenticated: 'next' },
+  { path: "/login", isPublic: true, whenAuthenticated: 'redirect' },
+  { path: "/register", isPublic: true, whenAuthenticated: 'redirect' },
+  { path: "/dashboard", isPublic: false, whenAuthenticated: 'next' },
+  // Adicione outras rotas privadas conforme necessário
+];
 
 export default clerkMiddleware(async (auth, request) => {
   const { userId } = await auth();
-  const url = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
-  // Se o usuário está logado e tenta acessar rotas de auth (login/register) ou a landing page
-  if (userId && (url.pathname === "/" || isAuthRoute(request))) {
-    const dashboardUrl = new URL("/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
+  // Encontra a configuração da rota atual
+  const route = ROUTES.find(r => pathname === r.path || pathname.startsWith(`${r.path}/`));
+
+  // 1. Rota Privada (não listada ou marcada como não pública)
+  const isPrivate = !route || !route.isPublic;
+
+  if (isPrivate && !userId) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirect_url", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  // Protege rotas privadas
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+  // 2. Lógica de Redirecionamento Inteligente para Usuários Autenticados
+  if (userId && route?.whenAuthenticated === 'redirect') {
+    const dashboardUrl = new URL("/dashboard", request.url);
+    return NextResponse.redirect(dashboardUrl);
   }
   
   return NextResponse.next();

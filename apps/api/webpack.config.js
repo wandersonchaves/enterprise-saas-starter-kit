@@ -7,6 +7,7 @@ module.exports = function (options) {
       nodeExternals({
         allowlist: [/^@enterprise/],
       }),
+      '@prisma/client-runtime-utils',
     ],
   };
 };

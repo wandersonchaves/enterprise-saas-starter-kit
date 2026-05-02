@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { prisma, ExtendedPrismaClient, PrismaClient } from '@enterprise/database';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
@@ -11,8 +13,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     
     // In production, we initialize a separate read-only client for replicas
     if (process.env.DATABASE_URL_READ_REPLICA) {
+      const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL_READ_REPLICA });
+      const adapter = new PrismaPg(pool);
       this._readReplica = new PrismaClient({
-        datasources: { db: { url: process.env.DATABASE_URL_READ_REPLICA } },
+        adapter,
       });
     }
   }

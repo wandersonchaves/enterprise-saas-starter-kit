@@ -23,10 +23,11 @@ export class HealthController {
         }
       };
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       return {
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: error.message
+        error: message
       };
     }
   }

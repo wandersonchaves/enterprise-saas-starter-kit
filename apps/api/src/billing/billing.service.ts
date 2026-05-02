@@ -52,7 +52,8 @@ export class BillingService {
         process.env.STRIPE_WEBHOOK_SECRET || '',
       );
     } catch (err) {
-      this.logger.error(`Webhook signature verification failed: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Webhook signature verification failed: ${message}`);
       throw new Error('Webhook Error');
     }
 

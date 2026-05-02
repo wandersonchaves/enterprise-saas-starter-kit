@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { AuthProvider } from "@/providers/auth-provider";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
@@ -35,7 +36,9 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <AuthProvider>
+              {children}
+            </AuthProvider>
             <Toaster richColors position="top-right" />
           </ThemeProvider>
         </body>

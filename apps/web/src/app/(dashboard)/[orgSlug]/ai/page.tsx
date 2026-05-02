@@ -1,7 +1,6 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
 export default function AiChatPage() {
@@ -11,22 +10,24 @@ export default function AiChatPage() {
     setOrganizationId(localStorage.getItem('organization-id'));
   }, []);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: 'http://localhost:3000/ai/chat',
+  const chat: any = useChat({
+    api: '/api/chat',
     body: {
       organizationId,
     },
     headers: {
       'organization-id': organizationId || '',
     },
-  });
+  } as any);
+
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = chat;
 
   return (
     <div className="flex flex-col w-full max-w-2xl py-24 mx-auto stretch">
       <h1 className="text-2xl font-bold mb-8">AI Assistant</h1>
-      
+
       <div className="space-y-4 mb-8">
-        {messages.map(m => (
+        {messages.map((m: any) => (
           <div key={m.id} className={`whitespace-pre-wrap ${m.role === 'user' ? 'text-blue-600' : 'text-gray-800'}`}>
             <span className="font-bold">{m.role === 'user' ? 'You: ' : 'AI: '}</span>
             {m.content}

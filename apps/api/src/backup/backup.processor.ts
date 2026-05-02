@@ -48,7 +48,8 @@ export class BackupProcessor extends WorkerHost {
 
         this.logger.log('Database backup successfully uploaded to S3.');
       } catch (error) {
-        this.logger.error(`Database backup failed: ${error.message}`);
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Database backup failed: ${message}`);
         throw error;
       }
     }

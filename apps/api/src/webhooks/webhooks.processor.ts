@@ -27,7 +27,8 @@ export class WebhooksProcessor extends WorkerHost {
       });
       this.logger.log(`Webhook successfully delivered to ${url}`);
     } catch (error) {
-      this.logger.error(`Webhook delivery failed to ${url}: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Webhook delivery failed to ${url}: ${message}`);
       throw error; // Let BullMQ handle retries
     }
   }
