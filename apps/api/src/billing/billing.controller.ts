@@ -3,6 +3,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import type { Request } from 'express';
 import { ClerkGuard } from '../common/guards/clerk.guard';
+import { MembershipGuard } from '../common/guards/membership.guard';
 import { CurrentOrg } from '../common/decorators/org.decorator';
 import type { Organization } from '@enterprise/database';
 
@@ -11,7 +12,7 @@ export class BillingController {
   constructor(private billingService: BillingService) {}
 
   @Post('checkout')
-  @UseGuards(ClerkGuard)
+  @UseGuards(ClerkGuard, MembershipGuard)
   async createCheckout(
     @CurrentOrg() org: Organization, 
     @Body('plan') plan: string

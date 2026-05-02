@@ -23,7 +23,7 @@ export class MembershipGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const orgSlug = request.params.orgSlug;
+    const orgSlug = request.params.orgSlug || request.query.orgSlug;
 
     if (!user) {
       return false;

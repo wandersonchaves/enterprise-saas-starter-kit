@@ -12,7 +12,7 @@ import { tenantContext } from '@enterprise/database';
 export class TenantInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const organizationId = request.headers['organization-id'];
+    const organizationId = request.headers['x-organization-id'] || request.headers['organization-id'];
 
     // In some cases, we might want to skip this for global routes (like profile management)
     // For now, let's assume it's optional but if present, it must be used.
