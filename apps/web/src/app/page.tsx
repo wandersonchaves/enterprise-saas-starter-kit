@@ -17,6 +17,8 @@ import { ModeToggle } from '@/components/layout/mode-toggle';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  const { userId } = await auth();
+
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/10">
       {/* Navigation */}
@@ -35,15 +37,26 @@ export default async function Home() {
 
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <Link href="/login" className="text-sm font-bold hover:opacity-80 transition-opacity">
-              Login
-            </Link>
-            <Link 
-              href="/register" 
-              className="bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
-            >
-              Começar Agora
-            </Link>
+            {userId ? (
+              <Link 
+                href="/dashboard" 
+                className="bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+              >
+                Acessar Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-bold hover:opacity-80 transition-opacity">
+                  Login
+                </Link>
+                <Link 
+                  href="/register" 
+                  className="bg-primary text-primary-foreground px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                >
+                  Começar Agora
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useAuth, useOrganizationList } from "@clerk/nextjs";
+import { useAuth, useOrganizationList, CreateOrganization } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -19,6 +19,7 @@ export default function DashboardRedirectPage() {
   });
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [showCreateOrg, setShowShowCreateOrg] = useState(false);
 
   useEffect(() => {
     if (!isAuthLoaded || !isListLoaded) return;
@@ -42,9 +43,8 @@ export default function DashboardRedirectPage() {
         }
       }
 
-      // Se chegou aqui e não tem organização, pode ser um usuário novo
-      // Redireciona para uma página de onboarding ou landing
-      router.replace("/");
+      // Se chegou aqui e não tem organização, paramos o loading para mostrar a opção de criar
+      // Isso evita o loop infinito de redirecionamento para a landing page
     } catch (e) {
       console.error("Redirect logic failed:", e);
       setError("Não conseguimos localizar seu espaço de trabalho.");
@@ -64,6 +64,53 @@ export default function DashboardRedirectPage() {
         <Button onClick={() => window.location.reload()} variant="outline">
           Tentar Novamente
         </Button>
+      </div>
+    );
+  }
+
+  // Se carregou tudo e não há organizações
+  if (isListLoaded && userMemberships.data && userMemberships.data.length === 0) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center gap-8 bg-background p-4">
+        {!showCreateOrg ? (
+          <div className="max-w-md w-full text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto text-primary">
+              <Plus size={40} strokeWidth={2.5} />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-3xl font-black tracking-tight">Quase lá!</h1>
+              <p className="text-muted-foreground">
+                Você ainda não faz parte de nenhuma organização. Crie o seu primeiro workspace para começar a usar a plataforma.
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowShowCreateOrg(true)} 
+              size="lg" 
+              className="w-full h-14 rounded-2xl font-bold text-lg gap-2 shadow-xl shadow-primary/20"
+            >
+              Criar meu Workspace
+            </Button>
+            <button 
+              onClick={() => router.push("/")}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+            >
+              Sair e voltar para a home
+            </button>
+          </div>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <CreateOrganization 
+              afterCreateOrganizationUrl="/dashboard"
+              routing="hash"
+            />
+            <button 
+              onClick={() => setShowShowCreateOrg(false)}
+              className="mt-6 text-sm text-muted-foreground hover:text-foreground block mx-auto font-medium"
+            >
+              Voltar
+            </button>
+          </div>
+        )}
       </div>
     );
   }
