@@ -1,6 +1,6 @@
-/** @type {import('next').NextConfig} */
+// Force reload to clear Clerk middleware detection cache
 const nextConfig = {
-  transpilePackages: ["@enterprise/common", "@enterprise/database", "@enterprise/events"],
+  transpilePackages: ["@enterprise/common", "@enterprise/database", "@enterprise/events", "@clerk/nextjs"],
   reactStrictMode: true,
   swcMinify: true,
   output: 'standalone',
