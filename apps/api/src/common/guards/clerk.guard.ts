@@ -109,11 +109,11 @@ export class ClerkGuard implements CanActivate {
                   organizationId: org.id
                 }
               },
-              update: { role: cm.role },
+              update: { role: this.mapClerkRole(cm.role) as any },
               create: {
                 userId: user.id,
                 organizationId: org.id,
-                role: cm.role,
+                role: this.mapClerkRole(cm.role) as any,
               }
             });
           }
@@ -147,5 +147,29 @@ export class ClerkGuard implements CanActivate {
   private extractTokenFromHeader(request: any): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
+  }
+
+  private mapClerkRole(clerkRole: string): string {
+    if (!clerkRole) return 'MEMBER';
+    
+    switch (clerkRole.toLowerCase()) {
+      case 'org:admin':
+        return 'ADMIN';
+      case 'org:member':
+        return 'MEMBER';
+      case 'org:owner':
+        return 'OWNER';
+      default:
+        // Fallback para papéis customizados ou formatos diretos (ADMIN, MEMBER, etc)
+        const parts = clerkRole.split(':');
+        const roleName = (parts[parts.length - 1] || '').toUpperCase();
+        
+        const validRoles = ['OWNER', 'ADMIN', 'MEMBER', 'BILLING', 'VIEWER'];
+        if (validRoles.includes(roleName)) {
+          return roleName;
+        }
+        
+        return 'MEMBER';
+    }
   }
 }
