@@ -5,8 +5,13 @@ module.exports = function (options) {
     ...options,
     externals: [
       nodeExternals({
-        allowlist: [/^@enterprise/],
+        allowlist: [/^@enterprise\/(?!database)/], 
       }),
+      '@enterprise/database',
+      '@prisma/client',
+      '.prisma/client',
+      '@prisma/client-runtime-utils',
     ],
   };
 };
+
