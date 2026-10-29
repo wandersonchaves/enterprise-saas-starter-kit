@@ -69,7 +69,7 @@ pnpm --filter @enterprise/database prisma migrate deploy   # before starting the
 
 ## Tests and CI
 
-CI (GitHub Actions) runs lint and build with Turborepo. **It is currently red on `main`**: `apps/api` lint reports 232 errors (mostly `no-unsafe-*` in the e2e specs) and `apps/web` has no ESLint config, so `next lint` waits for an interactive prompt. Test coverage is minimal: only the default controller specs of `apps/api` and `apps/gateway` exist.
+CI (GitHub Actions) runs lint and build with Turborepo. Lint passes with warnings: in `apps/api` the `no-unsafe-*`, unused-variable and a few other rules are set to `warn` because of untyped Clerk, Stripe and Prisma payloads (about 250 warnings to clean up). Test coverage is minimal: only the default controller specs of `apps/api` and `apps/gateway` exist.
 
 ## Using it as a template
 
