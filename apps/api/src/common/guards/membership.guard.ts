@@ -2,6 +2,7 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { GetMembershipService } from '../../organization/get-membership.service';
@@ -29,8 +30,9 @@ export class MembershipGuard implements CanActivate {
       return false;
     }
 
+    // Deny by default: a route behind this guard must name its organization.
     if (!orgSlug) {
-      return true;
+      throw new ForbiddenException('Organization context is required');
     }
 
     const membership = await this.getMembershipService.execute(
