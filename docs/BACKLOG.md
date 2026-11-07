@@ -6,10 +6,10 @@ Each item has a definition of done. Work one step per branch and one pull reques
 
 Found in a read-only review of `apps/api` (not a full audit):
 
-- [ ] **Membership check is skipped when the route has no `orgSlug`.** `MembershipGuard` returns `true` when neither a route parameter nor a query parameter provides it, so an authenticated route without that parameter has no tenant check. *Done when:* the guard denies by default, the tenant comes from the token or the route, and a test proves it.
-- [ ] **API keys are stored and looked up in plain text.** `ApiKeyGuard` finds the key by its value. *Done when:* only a hash is stored, the key is shown once at creation, and comparison is constant-time.
-- [ ] **CORS accepts any origin.** `app.enableCors()` has no origin list. *Done when:* allowed origins come from the environment.
-- [ ] **Error monitoring samples 100% of traces and profiles.** *Done when:* the rates are configurable and lower in production, and no personal data is sent.
+- [x] **Membership check is skipped when the route has no `orgSlug`.** Fixed: `MembershipGuard` now denies by default and a unit test covers it. Still open: take the tenant from the token as well as the route.
+- [ ] **API keys are stored and looked up in plain text.** `ApiKeyGuard` finds the key by its value. The guard is not used by any route yet and nothing creates keys, so fix this together with the key creation flow (it needs a schema migration). *Done when:* only a hash is stored, the key is shown once at creation, and comparison is constant-time.
+- [x] **CORS accepts any origin.** Fixed: allowed origins come from `CORS_ORIGINS`, falling back to `FRONTEND_URL`.
+- [ ] **Error monitoring samples 100% of traces and profiles.** Partly fixed: both apps sample 10% in production. *Done when:* the rate is configurable by environment variable and no personal data is sent.
 
 ## Steps
 
