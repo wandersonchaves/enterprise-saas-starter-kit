@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { Role } from '@enterprise/database';
 import type { User, Organization } from '@enterprise/database';
@@ -23,10 +31,7 @@ export class OrganizationController {
   }
 
   @Post('invites/accept')
-  async acceptInvite(
-    @Body('token') token: string,
-    @CurrentUser() user: User,
-  ) {
+  async acceptInvite(@Body('token') token: string, @CurrentUser() user: User) {
     return this.organizationService.acceptInvite(token, user.id);
   }
 
@@ -42,7 +47,7 @@ export class OrganizationController {
   @Roles('OWNER', 'ADMIN')
   async updateOrganization(
     @CurrentOrg() org: Organization,
-    @Body() data: { name?: string, avatarUrl?: string, brandColor?: string }
+    @Body() data: { name?: string; avatarUrl?: string; brandColor?: string },
   ) {
     return this.organizationService.updateOrganization(org.id, data);
   }

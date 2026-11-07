@@ -28,7 +28,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
-      message: typeof message === 'object' ? (message as any).message || message : message,
+      message:
+        typeof message === 'object' ? message.message || message : message,
       ...(process.env.NODE_ENV !== 'production' && { stack: exception.stack }),
     });
   }

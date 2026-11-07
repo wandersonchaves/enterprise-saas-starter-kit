@@ -9,8 +9,10 @@ export class SandboxService {
     const sandbox = {
       ...context,
       console: {
-        log: (...args: any[]) => this.logger.log(`[Plugin Log]: ${args.join(' ')}`),
-        error: (...args: any[]) => this.logger.error(`[Plugin Error]: ${args.join(' ')}`),
+        log: (...args: any[]) =>
+          this.logger.log(`[Plugin Log]: ${args.join(' ')}`),
+        error: (...args: any[]) =>
+          this.logger.error(`[Plugin Error]: ${args.join(' ')}`),
       },
       // Restricted built-ins can be added here
       setTimeout,

@@ -4,7 +4,9 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class NotificationsService {
-  constructor(@InjectQueue('notifications') private readonly notificationsQueue: Queue) {}
+  constructor(
+    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
+  ) {}
 
   async sendWelcomeEmail(email: string, name?: string) {
     await this.notificationsQueue.add('welcome-email', {

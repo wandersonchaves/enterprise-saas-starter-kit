@@ -11,27 +11,31 @@ export class ChaosService {
   async wrapWithBreaker<T>(
     serviceName: string,
     action: () => Promise<T>,
-    fallback: () => T | Promise<T>
+    fallback: () => T | Promise<T>,
   ): Promise<T> {
     if (!this.breakers.has(serviceName)) {
       const breaker = new CircuitBreaker(action, {
-        timeout: 3000, 
-        errorThresholdPercentage: 50, 
-        resetTimeout: 30000 
+        timeout: 3000,
+        errorThresholdPercentage: 50,
+        resetTimeout: 30000,
       });
 
       breaker.fallback(fallback);
-      
-      breaker.on('open', () => this.logger.warn(`Circuit for ${serviceName} is now OPEN`));
-      breaker.on('close', () => this.logger.log(`Circuit for ${serviceName} is now CLOSED`));
-      
+
+      breaker.on('open', () =>
+        this.logger.warn(`Circuit for ${serviceName} is now OPEN`),
+      );
+      breaker.on('close', () =>
+        this.logger.log(`Circuit for ${serviceName} is now CLOSED`),
+      );
+
       this.breakers.set(serviceName, breaker);
     }
 
     // Failure Injection (Chaos Monkey)
     if (this.isChaosMonkeyEnabled && Math.random() < 0.1) {
-       this.logger.error(`Chaos Monkey: Injecting failure into ${serviceName}`);
-       throw new Error(`Injected failure for ${serviceName}`);
+      this.logger.error(`Chaos Monkey: Injecting failure into ${serviceName}`);
+      throw new Error(`Injected failure for ${serviceName}`);
     }
 
     return this.breakers.get(serviceName).fire() as Promise<T>;

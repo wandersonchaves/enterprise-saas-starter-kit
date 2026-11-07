@@ -1,4 +1,10 @@
-import { Injectable, ForbiddenException, NotFoundException, Inject, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  Inject,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@enterprise/database';
 import * as crypto from 'crypto';
@@ -92,7 +98,10 @@ export class OrganizationService {
     });
   }
 
-  async updateOrganization(id: string, data: { name?: string, avatarUrl?: string, brandColor?: string }) {
+  async updateOrganization(
+    id: string,
+    data: { name?: string; avatarUrl?: string; brandColor?: string },
+  ) {
     const org = await this.prisma.client.organization.update({
       where: { id },
       data,
@@ -106,7 +115,12 @@ export class OrganizationService {
     return org;
   }
 
-  async inviteMember(organizationId: string, email: string, role: Role, authorId: string) {
+  async inviteMember(
+    organizationId: string,
+    email: string,
+    role: Role,
+    authorId: string,
+  ) {
     // Check if author has permission to invite
     const authorMember = await this.prisma.client.member.findUnique({
       where: {
@@ -130,7 +144,9 @@ export class OrganizationService {
     });
 
     if (existingMember) {
-      throw new ConflictException('User is already a member of this organization');
+      throw new ConflictException(
+        'User is already a member of this organization',
+      );
     }
 
     // Check if there is already a pending invite
@@ -142,7 +158,9 @@ export class OrganizationService {
     });
 
     if (existingInvite) {
-      throw new ConflictException('An invite has already been sent to this email');
+      throw new ConflictException(
+        'An invite has already been sent to this email',
+      );
     }
 
     const token = crypto.randomBytes(32).toString('hex');

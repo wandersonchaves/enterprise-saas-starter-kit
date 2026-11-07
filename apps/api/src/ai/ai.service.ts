@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { google } from '@ai-sdk/google';
-import { streamText, LanguageModel, embed, StreamTextResult, EmbedResult } from 'ai';
+import {
+  streamText,
+  LanguageModel,
+  embed,
+  StreamTextResult,
+  EmbedResult,
+} from 'ai';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -22,7 +28,7 @@ export class AiService {
 
   async saveDocument(content: string, organizationId: string): Promise<void> {
     const embedding = await this.generateEmbedding(content);
-    
+
     // Using Prisma $executeRaw because vector fields are Unsupported
     await this.prisma.client.$executeRaw`
       INSERT INTO "Document" ("id", "content", "embedding", "organizationId", "updatedAt")
@@ -30,7 +36,10 @@ export class AiService {
     `;
   }
 
-  async generateChatResponse(messages: any[], organizationId: string): Promise<StreamTextResult<any, any>> {
+  async generateChatResponse(
+    messages: any[],
+    organizationId: string,
+  ): Promise<StreamTextResult<any, any>> {
     return streamText({
       model: this.model,
       messages,

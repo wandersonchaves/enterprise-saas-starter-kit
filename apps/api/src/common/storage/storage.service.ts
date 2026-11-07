@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 
@@ -14,7 +18,9 @@ export class StorageService {
       region: this.configService.getOrThrow<string>('AWS_REGION'),
       credentials: {
         accessKeyId: this.configService.getOrThrow<string>('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.configService.getOrThrow<string>('AWS_SECRET_ACCESS_KEY'),
+        secretAccessKey: this.configService.getOrThrow<string>(
+          'AWS_SECRET_ACCESS_KEY',
+        ),
       },
     });
     this.bucket = this.configService.getOrThrow<string>('AWS_S3_BUCKET');

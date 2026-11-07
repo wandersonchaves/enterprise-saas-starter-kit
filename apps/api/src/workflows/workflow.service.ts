@@ -20,19 +20,28 @@ export class WorkflowService {
     });
 
     for (const workflow of workflows) {
-      this.logger.log(`Executing workflow ${workflow.name} for org ${organizationId}`);
-      
+      this.logger.log(
+        `Executing workflow ${workflow.name} for org ${organizationId}`,
+      );
+
       let currentPayload = payload;
 
       for (const step of workflow.steps) {
         switch (step.type) {
           case 'AI_AGENT':
-            const aiResult = await this.agents.runOrchestration(JSON.stringify(currentPayload), organizationId);
+            const aiResult = await this.agents.runOrchestration(
+              JSON.stringify(currentPayload),
+              organizationId,
+            );
             currentPayload = { ...currentPayload, aiResult };
             break;
           case 'PLUGIN':
             // Integração com o Plugin Engine da Fase 21
-            await this.plugins.runPluginsForEvent(event, organizationId, currentPayload);
+            await this.plugins.runPluginsForEvent(
+              event,
+              organizationId,
+              currentPayload,
+            );
             break;
         }
       }

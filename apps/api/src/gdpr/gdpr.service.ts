@@ -12,7 +12,10 @@ export class GdprService {
     await this.prisma.client.organization.delete({
       where: { id: organizationId },
     });
-    return { success: true, message: 'All tenant data has been permanently erased.' };
+    return {
+      success: true,
+      message: 'All tenant data has been permanently erased.',
+    };
   }
 
   async exportData(organizationId: string, res: Response) {
@@ -33,7 +36,7 @@ export class GdprService {
 
     archive.pipe(res);
     archive.append(JSON.stringify(data, null, 2), { name: 'data.json' });
-    
+
     await archive.finalize();
   }
 }

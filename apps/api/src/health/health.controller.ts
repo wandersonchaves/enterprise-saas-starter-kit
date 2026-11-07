@@ -13,21 +13,21 @@ export class HealthController {
     try {
       // Verifica se o banco de dados responde
       await this.prisma.client.$queryRaw`SELECT 1`;
-      
+
       return {
         status: 'ok',
         timestamp: new Date().toISOString(),
         services: {
           database: 'healthy',
-          api: 'healthy'
-        }
+          api: 'healthy',
+        },
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return {
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: message
+        error: message,
       };
     }
   }

@@ -22,7 +22,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       useFactory: (configService: ConfigService) => {
         const apiKey = configService.get('RESEND_API_KEY');
         const nodeEnv = configService.get('NODE_ENV');
-        
+
         if (nodeEnv === 'test' || !apiKey || apiKey === 're_123456789') {
           return new MockEmailAdapter();
         }

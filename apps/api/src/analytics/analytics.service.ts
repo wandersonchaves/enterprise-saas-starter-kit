@@ -9,7 +9,9 @@ export class AnalyticsService {
     const [membersCount, documentsCount, activeInvites] = await Promise.all([
       this.prisma.client.member.count({ where: { organizationId } }),
       this.prisma.client.document.count({ where: { organizationId } }),
-      this.prisma.client.invite.count({ where: { organizationId, expiresAt: { gt: new Date() } } }),
+      this.prisma.client.invite.count({
+        where: { organizationId, expiresAt: { gt: new Date() } },
+      }),
     ]);
 
     // Simulação de dados de série temporal

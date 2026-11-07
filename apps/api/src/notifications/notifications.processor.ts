@@ -8,7 +8,9 @@ import type { IEmailProvider } from '../common/interfaces/email.interface';
 export class NotificationsProcessor extends WorkerHost {
   private readonly logger = new Logger(NotificationsProcessor.name);
 
-  constructor(@Inject(EMAIL_PROVIDER) private readonly emailProvider: IEmailProvider) {
+  constructor(
+    @Inject(EMAIL_PROVIDER) private readonly emailProvider: IEmailProvider,
+  ) {
     super();
   }
 

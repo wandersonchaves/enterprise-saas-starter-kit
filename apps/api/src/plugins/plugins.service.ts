@@ -14,7 +14,11 @@ export class PluginsService implements OnModuleInit {
     // For now, we provide a manual trigger for demonstration
   }
 
-  async runPluginsForEvent(event: string, organizationId: string, payload: any) {
+  async runPluginsForEvent(
+    event: string,
+    organizationId: string,
+    payload: any,
+  ) {
     const activePlugins = await this.prisma.client.plugin.findMany({
       where: {
         organizationId,
@@ -25,10 +29,10 @@ export class PluginsService implements OnModuleInit {
 
     for (const plugin of activePlugins) {
       try {
-        await this.sandbox.execute(plugin.code, { 
-          event, 
-          payload, 
-          organizationId 
+        await this.sandbox.execute(plugin.code, {
+          event,
+          payload,
+          organizationId,
         });
       } catch (error) {
         // Log and continue to next plugin

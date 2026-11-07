@@ -9,7 +9,7 @@ export class AgentManager {
 
   constructor() {
     this.model = new ChatGoogleGenerativeAI({
-      model: "gemini-1.5-pro",
+      model: 'gemini-1.5-pro',
       maxOutputTokens: 2048,
     });
   }
@@ -20,7 +20,7 @@ export class AgentManager {
     // Simple orchestration logic: router determines which specialized agent to call
     const routerPrompt = `You are a coordinator for a SaaS platform. 
                           Determine if the following request is related to BILLING, SUPPORT, or GROWTH: "${query}"`;
-    
+
     const classification = await this.model.invoke([
       new SystemMessage(routerPrompt),
       new HumanMessage(query),
@@ -38,14 +38,23 @@ export class AgentManager {
   }
 
   private async runBillingAgent(query: string, organizationId: string) {
-    return { agent: 'BillingAgent', response: `Analyzing billing data for ${organizationId}...` };
+    return {
+      agent: 'BillingAgent',
+      response: `Analyzing billing data for ${organizationId}...`,
+    };
   }
 
   private async runSupportAgent(query: string, organizationId: string) {
-    return { agent: 'SupportAgent', response: `Searching knowledge base for ${organizationId}...` };
+    return {
+      agent: 'SupportAgent',
+      response: `Searching knowledge base for ${organizationId}...`,
+    };
   }
 
   private async runGrowthAgent(query: string, organizationId: string) {
-    return { agent: 'GrowthAgent', response: `Generating growth strategy for ${organizationId}...` };
+    return {
+      agent: 'GrowthAgent',
+      response: `Generating growth strategy for ${organizationId}...`,
+    };
   }
 }

@@ -35,7 +35,7 @@ import { PrismaService } from './prisma/prisma.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ 
+    ConfigModule.forRoot({
       isGlobal: true,
       validate: validateEnv,
     }),
@@ -49,10 +49,12 @@ import { PrismaService } from './prisma/prisma.service';
     BackupModule,
     PluginsModule,
     MarketplaceModule,
-    ThrottlerModule.forRoot([{
-      ttl: 60000,
-      limit: 100,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST || 'localhost',

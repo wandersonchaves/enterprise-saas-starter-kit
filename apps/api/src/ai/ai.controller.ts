@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Res, UseGuards, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { AiService } from './ai.service';
 import type { Response } from 'express';
 import { ClerkGuard } from '../common/guards/clerk.guard';
@@ -22,7 +29,7 @@ export class AiController {
     }
 
     const result = await this.aiService.generateChatResponse(messages, org.id);
-    
+
     // Convert to a stream and pipe to the response
     result.pipeTextStreamToResponse(res);
   }

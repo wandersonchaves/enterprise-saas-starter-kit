@@ -18,11 +18,14 @@ export class DataLakeService {
       },
     });
 
-    const averageDocumentsPerTenant = stats.reduce((acc, curr) => acc + curr._count._all, 0) / stats.length;
+    const averageDocumentsPerTenant =
+      stats.reduce((acc, curr) => acc + curr._count._all, 0) / stats.length;
 
     // Save to an anonymous analytics table or external Data Lake
-    this.logger.log(`Market Benchmark: Average documents per tenant: ${averageDocumentsPerTenant}`);
-    
+    this.logger.log(
+      `Market Benchmark: Average documents per tenant: ${averageDocumentsPerTenant}`,
+    );
+
     return {
       averageDocumentsPerTenant,
       totalTenants: stats.length,

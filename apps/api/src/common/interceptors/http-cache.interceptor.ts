@@ -3,11 +3,7 @@ import {
   CACHE_MANAGER,
   CACHE_KEY_METADATA,
 } from '@nestjs/cache-manager';
-import {
-  ExecutionContext,
-  Injectable,
-  Inject,
-} from '@nestjs/common';
+import { ExecutionContext, Injectable, Inject } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 /**
@@ -26,12 +22,15 @@ export class HttpCacheInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
     const request = context.switchToHttp().getRequest();
     const requestMethod = request.method;
-    
+
     if (requestMethod !== 'GET') {
       return undefined;
     }
 
-    const cacheMetadata = this.reflector.get(CACHE_KEY_METADATA, context.getHandler());
+    const cacheMetadata = this.reflector.get(
+      CACHE_KEY_METADATA,
+      context.getHandler(),
+    );
     if (cacheMetadata) {
       return cacheMetadata;
     }

@@ -6,15 +6,15 @@ import pg from 'pg';
 @Injectable()
 export class QueryAnalyzerService implements OnModuleInit {
   private readonly logger = new Logger('QueryAnalyzer');
-  private slowQueryThreshold = 500; 
+  private slowQueryThreshold = 500;
 
   onModuleInit() {
     this.logger.log('Database Query Performance Audit initialized');
-    
+
     const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     const adapter = new PrismaPg(pool);
     const basePrisma = new PrismaClient({
-      adapter
+      adapter,
     }).$extends({
       query: {
         $allModels: {
@@ -25,7 +25,9 @@ export class QueryAnalyzerService implements OnModuleInit {
             const duration = after - before;
 
             if (duration > 500) {
-              console.warn(`SLOW QUERY: ${model}.${operation} took ${duration}ms`);
+              console.warn(
+                `SLOW QUERY: ${model}.${operation} took ${duration}ms`,
+              );
             }
 
             return result;

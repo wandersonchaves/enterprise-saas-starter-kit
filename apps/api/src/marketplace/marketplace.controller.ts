@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Headers, Param, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Headers,
+  Param,
+  Patch,
+} from '@nestjs/common';
 import { MarketplaceService } from './marketplace.service';
 
 @Controller('marketplace')
@@ -15,7 +23,10 @@ export class MarketplaceController {
     @Param('id') extensionId: string,
     @Headers('organization-id') organizationId: string,
   ) {
-    return this.marketplaceService.installExtension(extensionId, organizationId);
+    return this.marketplaceService.installExtension(
+      extensionId,
+      organizationId,
+    );
   }
 
   @Patch('extensions/:id/config')
@@ -24,6 +35,10 @@ export class MarketplaceController {
     @Headers('organization-id') organizationId: string,
     @Body() config: any,
   ) {
-    return this.marketplaceService.updateConfig(extensionId, organizationId, config);
+    return this.marketplaceService.updateConfig(
+      extensionId,
+      organizationId,
+      config,
+    );
   }
 }

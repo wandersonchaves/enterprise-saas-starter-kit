@@ -5,7 +5,7 @@ import * as CryptoJS from 'crypto-js';
 export class EncryptionService {
   // In a real E2EE scenario, the 'tenantSecret' would come from a Secure Vault (e.g., AWS KMS)
   // or be derived from a value only known to the tenant.
-  
+
   encrypt(text: string, tenantSecret: string): string {
     return CryptoJS.AES.encrypt(text, tenantSecret).toString();
   }

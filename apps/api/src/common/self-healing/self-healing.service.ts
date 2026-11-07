@@ -18,7 +18,9 @@ export class SelfHealingService implements OnModuleInit {
 
     // Memory Leak Self-Healing
     if (memoryUsage > 512) {
-      this.logger.warn(`High memory usage detected (${memoryUsage.toFixed(2)} MB). Triggering Garbage Collection.`);
+      this.logger.warn(
+        `High memory usage detected (${memoryUsage.toFixed(2)} MB). Triggering Garbage Collection.`,
+      );
       if (global.gc) {
         global.gc();
       }
@@ -26,7 +28,9 @@ export class SelfHealingService implements OnModuleInit {
 
     // High Error Rate Self-Healing
     if (this.errorCount > this.ERROR_THRESHOLD) {
-      this.logger.error(`Critical error rate detected (${this.errorCount} errors/min). Triggering instance restart.`);
+      this.logger.error(
+        `Critical error rate detected (${this.errorCount} errors/min). Triggering instance restart.`,
+      );
       // In a k8s environment, this could be process.exit(1) to let the orchestrator restart the pod
       this.resetErrorCount();
     }

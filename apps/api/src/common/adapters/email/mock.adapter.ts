@@ -11,7 +11,9 @@ export class MockEmailAdapter implements IEmailProvider {
     text?: string;
     html?: string;
   }): Promise<boolean> {
-    this.logger.log(`[MOCK EMAIL] To: ${options.to} | Subject: ${options.subject}`);
+    this.logger.log(
+      `[MOCK EMAIL] To: ${options.to} | Subject: ${options.subject}`,
+    );
     // Simula um delay de rede para ser realista, mas sem gastar créditos
     return true;
   }

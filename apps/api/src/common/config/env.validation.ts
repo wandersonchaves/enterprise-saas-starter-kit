@@ -10,8 +10,11 @@ export const envSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1, 'STRIPE_WEBHOOK_SECRET is required'),
   STRIPE_PRICE_ID_PRO: z.string().optional(),
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  CORS_ORIGINS: z.string().optional(),
   PORT: z.coerce.number().default(3001),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z
+    .enum(['development', 'production', 'test'])
+    .default('development'),
 });
 
 export type Env = z.infer<typeof envSchema>;

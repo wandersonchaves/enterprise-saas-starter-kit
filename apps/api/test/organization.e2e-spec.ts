@@ -24,14 +24,12 @@ describe('Organization Management & Async Side-effects (e2e)', () => {
       name: 'Org Tester',
     };
 
-    await request(app.getHttpServer())
-      .post('/auth/register')
-      .send(testUser);
+    await request(app.getHttpServer()).post('/auth/register').send(testUser);
 
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: testUser.email, password: testUser.password });
-    
+
     accessToken = loginRes.body.access_token;
   });
 
@@ -45,7 +43,7 @@ describe('Organization Management & Async Side-effects (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ name: 'Test Corp', slug: `test-corp-${Date.now()}` })
       .expect(201);
-    
+
     orgId = res.body.id;
     expect(orgId).toBeDefined();
     expect(res.body.name).toBe('Test Corp');
@@ -67,7 +65,7 @@ describe('Organization Management & Async Side-effects (e2e)', () => {
       .set('organization-id', orgId)
       .send({ email: 'new-member@example.com', role: 'MEMBER' })
       .expect(409);
-    
+
     expect(res.body.message).toContain('already been sent');
   });
 
@@ -86,7 +84,7 @@ describe('Organization Management & Async Side-effects (e2e)', () => {
       .set('Authorization', `Bearer ${accessToken}`)
       .set('organization-id', otherOrgId)
       .expect(200);
-    
+
     // If cache isolation works, it should reach the service and compute stats for the new ID
     // Our AnalyticsService returns growthData for the given ID
     expect(res.body.growthData).toBeDefined();

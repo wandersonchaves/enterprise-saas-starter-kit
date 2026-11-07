@@ -16,16 +16,20 @@ export class WebhooksService {
     });
 
     for (const webhook of webhooks) {
-      await this.webhooksQueue.add('dispatch-webhook', {
-        webhookId: webhook.id,
-        url: webhook.url,
-        secret: webhook.secret,
-        event,
-        payload,
-      }, {
-        attempts: 5,
-        backoff: { type: 'exponential', delay: 1000 },
-      });
+      await this.webhooksQueue.add(
+        'dispatch-webhook',
+        {
+          webhookId: webhook.id,
+          url: webhook.url,
+          secret: webhook.secret,
+          event,
+          payload,
+        },
+        {
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 1000 },
+        },
+      );
     }
   }
 }

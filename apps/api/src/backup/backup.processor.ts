@@ -14,13 +14,15 @@ export class BackupProcessor extends WorkerHost {
 
   constructor() {
     super();
-    this.s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+    this.s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'us-east-1',
+    });
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
     if (job.name === 'daily-db-backup') {
       this.logger.log('Starting daily database backup...');
-      
+
       const fileName = `backup-${new Date().toISOString()}.sql`;
       const filePath = `/tmp/${fileName}`;
 
@@ -30,21 +32,27 @@ export class BackupProcessor extends WorkerHost {
 
         // Upload to S3
         const bucketName = process.env.BACKUP_BUCKET_NAME;
-        
+
         if (!bucketName) {
-          this.logger.warn('BACKUP_BUCKET_NAME is not configured. Skipping S3 upload.');
+          this.logger.warn(
+            'BACKUP_BUCKET_NAME is not configured. Skipping S3 upload.',
+          );
           if (process.env.NODE_ENV === 'development') {
-            this.logger.log(`In development, backup file is available at: ${filePath}`);
+            this.logger.log(
+              `In development, backup file is available at: ${filePath}`,
+            );
           }
           return;
         }
 
         // Note: This assumes AWS credentials are set in environment
-        await this.s3Client.send(new PutObjectCommand({
-          Bucket: bucketName,
-          Key: fileName,
-          Body: require('fs').createReadStream(filePath),
-        }));
+        await this.s3Client.send(
+          new PutObjectCommand({
+            Bucket: bucketName,
+            Key: fileName,
+            Body: require('fs').createReadStream(filePath),
+          }),
+        );
 
         this.logger.log('Database backup successfully uploaded to S3.');
       } catch (error) {

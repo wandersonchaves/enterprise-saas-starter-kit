@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Plan } from '@enterprise/database';
@@ -34,10 +39,12 @@ export class PlanGuard implements CanActivate {
 
     const currentPlan = subscription?.plan || 'FREE';
 
-    const hasPlan = requiredPlans.includes(currentPlan as Plan);
+    const hasPlan = requiredPlans.includes(currentPlan);
 
     if (!hasPlan) {
-      throw new ForbiddenException(`This feature requires one of the following plans: ${requiredPlans.join(', ')}`);
+      throw new ForbiddenException(
+        `This feature requires one of the following plans: ${requiredPlans.join(', ')}`,
+      );
     }
 
     return true;

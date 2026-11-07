@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -16,13 +20,15 @@ export class MarketplaceService {
 
     if (!extension) throw new NotFoundException('Extension not found');
 
-    const existingInstallation = await this.prisma.client.installedExtension.findUnique({
-      where: {
-        extensionId_organizationId: { extensionId, organizationId },
-      },
-    });
+    const existingInstallation =
+      await this.prisma.client.installedExtension.findUnique({
+        where: {
+          extensionId_organizationId: { extensionId, organizationId },
+        },
+      });
 
-    if (existingInstallation) throw new ConflictException('Extension already installed');
+    if (existingInstallation)
+      throw new ConflictException('Extension already installed');
 
     return this.prisma.client.installedExtension.create({
       data: {

@@ -7,16 +7,9 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditLogsModule } from '../audit-logs/audit-logs.module';
 
 @Module({
-  imports: [
-    NotificationsModule,
-    forwardRef(() => AuditLogsModule),
-  ],
+  imports: [NotificationsModule, forwardRef(() => AuditLogsModule)],
   controllers: [OrganizationController],
-  providers: [
-    OrganizationService,
-    GetMembershipService,
-    PrismaService,
-  ],
+  providers: [OrganizationService, GetMembershipService, PrismaService],
   exports: [GetMembershipService],
 })
 export class OrganizationModule {}

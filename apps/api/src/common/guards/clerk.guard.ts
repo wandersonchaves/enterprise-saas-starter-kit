@@ -35,9 +35,9 @@ export class ClerkGuard implements CanActivate {
       const sessionClaims = await verifyToken(token, {
         secretKey: this.secretKey,
       });
-      
-      const clerkUserId = sessionClaims.sub as string;
-      const clerkOrgId = sessionClaims.org_id as string | undefined;
+
+      const clerkUserId = sessionClaims.sub;
+      const clerkOrgId = sessionClaims.org_id;
 
       // console.log(`Clerk Auth: User ${clerkUserId}, Org ${clerkOrgId}`);
 
@@ -45,9 +45,9 @@ export class ClerkGuard implements CanActivate {
         where: { clerkId: clerkUserId },
         include: {
           memberships: {
-            include: { organization: true }
-          }
-        }
+            include: { organization: true },
+          },
+        },
       });
 
       if (!user) {
@@ -60,69 +60,77 @@ export class ClerkGuard implements CanActivate {
           create: {
             clerkId: clerkUserId,
             email: email,
-            name: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User',
+            name:
+              `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() ||
+              'User',
             avatarUrl: clerkUser.imageUrl,
           },
           include: {
             memberships: {
-              include: { organization: true }
-            }
-          }
+              include: { organization: true },
+            },
+          },
         });
       }
 
       request['user'] = user;
-      
-      // LAZY SYNC: Se o usuário não tem nenhuma membership no nosso banco, 
+
+      // LAZY SYNC: Se o usuário não tem nenhuma membership no nosso banco,
       // ou se temos um clerkOrgId ativo que ainda não está sincronizado, sincronizamos.
-      const shouldSync = (user.memberships.length === 0) || (clerkOrgId && !user.memberships.find(m => m.organization.clerkId === clerkOrgId));
+      const shouldSync =
+        user.memberships.length === 0 ||
+        (clerkOrgId &&
+          !user.memberships.find((m) => m.organization.clerkId === clerkOrgId));
 
       if (shouldSync) {
         // console.log(`Syncing memberships for user ${clerkUserId}`);
-        
+
         try {
           // Busca todas as memberships do usuário no Clerk
-          const { data: clerkMemberships } = await this.clerkClient.users.getOrganizationMembershipList({ 
-            userId: clerkUserId 
-          });
+          const { data: clerkMemberships } =
+            await this.clerkClient.users.getOrganizationMembershipList({
+              userId: clerkUserId,
+            });
 
           for (const cm of clerkMemberships) {
             const org = await this.prisma.client.organization.upsert({
               where: { clerkId: cm.organization.id },
-              update: { 
-                name: cm.organization.name, 
+              update: {
+                name: cm.organization.name,
                 avatarUrl: cm.organization.imageUrl,
-                slug: cm.organization.slug || undefined
+                slug: cm.organization.slug || undefined,
               },
               create: {
                 clerkId: cm.organization.id,
                 name: cm.organization.name,
-                slug: cm.organization.slug || `org-${cm.organization.id.substring(0, 8)}`,
+                slug:
+                  cm.organization.slug ||
+                  `org-${cm.organization.id.substring(0, 8)}`,
                 avatarUrl: cm.organization.imageUrl,
-              }
+              },
             });
 
             await this.prisma.client.member.upsert({
               where: {
                 organizationId_userId: {
                   userId: user.id,
-                  organizationId: org.id
-                }
+                  organizationId: org.id,
+                },
               },
               update: { role: this.mapClerkRole(cm.role) as any },
               create: {
                 userId: user.id,
                 organizationId: org.id,
                 role: this.mapClerkRole(cm.role) as any,
-              }
+              },
             });
           }
 
           // Recarrega o usuário com as novas memberships para o restante da request
-          user = await this.prisma.client.user.findUnique({
+          user = (await this.prisma.client.user.findUnique({
             where: { id: user.id },
-            include: { memberships: { include: { organization: true } } }
-          }) as any;
+            include: { memberships: { include: { organization: true } } },
+          })) as any;
           request['user'] = user;
         } catch (syncError) {
           console.error('Failed to sync memberships from Clerk:', syncError);
@@ -130,13 +138,15 @@ export class ClerkGuard implements CanActivate {
       }
 
       if (clerkOrgId && user) {
-        const activeMembership = user.memberships.find(m => m.organization.clerkId === clerkOrgId);
+        const activeMembership = user.memberships.find(
+          (m) => m.organization.clerkId === clerkOrgId,
+        );
         if (activeMembership) {
           request['organization'] = activeMembership.organization;
           request['membership'] = activeMembership;
         }
       }
-      
+
       return true;
     } catch (error) {
       console.error('Clerk Auth Guard Error:', error);
@@ -151,7 +161,7 @@ export class ClerkGuard implements CanActivate {
 
   private mapClerkRole(clerkRole: string): string {
     if (!clerkRole) return 'MEMBER';
-    
+
     switch (clerkRole.toLowerCase()) {
       case 'org:admin':
         return 'ADMIN';
@@ -163,12 +173,12 @@ export class ClerkGuard implements CanActivate {
         // Fallback para papéis customizados ou formatos diretos (ADMIN, MEMBER, etc)
         const parts = clerkRole.split(':');
         const roleName = (parts[parts.length - 1] || '').toUpperCase();
-        
+
         const validRoles = ['OWNER', 'ADMIN', 'MEMBER', 'BILLING', 'VIEWER'];
         if (validRoles.includes(roleName)) {
           return roleName;
         }
-        
+
         return 'MEMBER';
     }
   }

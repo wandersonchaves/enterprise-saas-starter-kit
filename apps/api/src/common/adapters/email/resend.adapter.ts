@@ -18,11 +18,15 @@ export class ResendAdapter implements IEmailProvider {
     text?: string;
     html?: string;
   }): Promise<boolean> {
-    const isDev = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-    
+    const isDev =
+      !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+
     // Log for debugging in development
     if (isDev) {
-      const previewContent = options.text || options.html?.replace(/<[^>]*>?/gm, '').substring(0, 100) || 'No content';
+      const previewContent =
+        options.text ||
+        options.html?.replace(/<[^>]*>?/gm, '').substring(0, 100) ||
+        'No content';
       this.logger.log('--- DEVELOPMENT EMAIL LOG ---');
       this.logger.log(`To: ${options.to}`);
       this.logger.log(`Subject: ${options.subject}`);
@@ -32,9 +36,14 @@ export class ResendAdapter implements IEmailProvider {
 
     try {
       // If no real API key is provided, just simulate success in dev
-      if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_123456789') {
+      if (
+        !process.env.RESEND_API_KEY ||
+        process.env.RESEND_API_KEY === 're_123456789'
+      ) {
         if (isDev) {
-          this.logger.warn('RESEND_API_KEY not set or using default. Skipping actual send.');
+          this.logger.warn(
+            'RESEND_API_KEY not set or using default. Skipping actual send.',
+          );
           return true;
         }
       }
@@ -49,14 +58,18 @@ export class ResendAdapter implements IEmailProvider {
 
       if (response.error) {
         // Check if it's the specific trial restriction error
-        const isSandboxError = response.error.message.includes('only send testing emails to your own email address');
-        
+        const isSandboxError = response.error.message.includes(
+          'only send testing emails to your own email address',
+        );
+
         if (isSandboxError) {
-          this.logger.warn(`Resend Sandbox Restriction: Email to ${options.to} blocked, but logged above.`);
+          this.logger.warn(
+            `Resend Sandbox Restriction: Email to ${options.to} blocked, but logged above.`,
+          );
         } else {
           this.logger.error(`Failed to send email: ${response.error.message}`);
         }
-        
+
         // In development, we don't want to break the flow
         if (isDev) {
           return true;
